@@ -17,7 +17,8 @@ bun-full-stack/
 ├── src/
 │   ├── client/        # Frontend code
 │   │   └── index.ts   # Client-side TypeScript entry point
-│   └── server.ts      # Backend server code
+│   ├── server.ts      # Backend server code
+│   └── cluster.ts     # Server cluster manager
 ├── Dockerfile         # Docker container configuration
 ├── docker-compose.yml # Docker Compose configuration
 ├── .dockerignore      # Files to exclude from Docker build
@@ -28,8 +29,26 @@ bun-full-stack/
 
 - Real-time chat application with WebSockets
 - Automatic reconnection if connection drops
-- Message broadcasting to all connected clients
-- Simple UI for sending and displaying messages
+- Server cluster mode for multiple concurrent processes
+- Load balancing across multiple server instances
+
+## Running in Cluster Mode
+
+The application supports running in cluster mode, where multiple server instances share the same port through Bun's `reusePort` feature. This enables load balancing across multiple processes for improved performance.
+
+To run in cluster mode:
+
+```bash
+# Start the server in cluster mode (uses available CPU cores)
+bun run start:cluster
+
+# Specify the number of processes manually
+PROCESS_COUNT=4 bun run start:cluster
+```
+
+By default, the cluster will spawn a number of server instances equal to the number of available CPU cores. You can override this by setting the `PROCESS_COUNT` environment variable.
+
+You can verify which server instance is responding by accessing the `/instance` endpoint.
 
 ## Getting Started
 

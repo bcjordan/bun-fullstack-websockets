@@ -4,8 +4,10 @@
   "type": "module",
   "scripts": {
     "dev": "bun run src/server.ts",
+    "dev:cluster": "bun run src/cluster.ts",
     "build": "bun build src/client/index.ts --outdir public --outfile app.js",
-    "start": "bun run src/server.ts"
+    "start": "bun run src/server.ts",
+    "start:cluster": "bun run src/cluster.ts"
   },
   "devDependencies": {
     "bun-types": "latest"

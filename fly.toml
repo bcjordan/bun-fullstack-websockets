@@ -1,5 +1,5 @@
 app = "bun-chat-app"
-primary_region = "bos"  # Boston - change to your preferred region
+primary_region = "bos"
 
 [build]
   dockerfile = "Dockerfile"

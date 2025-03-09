@@ -2,6 +2,7 @@
 const MACHINE_ID = process.env.FLY_MACHINE_ID || "local";
 const MACHINE_NAME = process.env.FLY_MACHINE_NAME || "local";
 const REGION = process.env.FLY_REGION || "local";
+const SERVER_INDEX = process.env.SERVER_INDEX || "0";
 
 // Get number of Bun processes running on the machine
 import { exec } from "child_process";
@@ -37,6 +38,7 @@ async function broadcastServerStats() {
   const statsMessage = JSON.stringify({
     type: "stats_update",
     debug: {
+      serverId: `${MACHINE_ID}-${SERVER_INDEX}`,
       bunProcesses: bunProcessCount,
       connectedClients,
       totalConnectionsReceived,
@@ -91,7 +93,7 @@ async function getSystemInfo() {
     } else if (process.platform === "darwin") {
       // macOS-specific commands
       const cpuCmd = "sysctl -n vm.loadavg | tr -d '{}'";
-      const memCmd = "vm_stat | grep 'Pages free:'";
+      const memCmd = "vm_stat | awk '/Pages free/ || /Pages active/ || /Pages inactive/ || /Pages speculative/ || /Pages wired/'";
       
       try {
         const { stdout: cpuStdout } = await execPromise(cpuCmd);
@@ -131,6 +133,8 @@ async function getSystemInfo() {
 // Create a websocket server
 const server = Bun.serve({
   port: parseInt(process.env.PORT || "3002"),
+  // Enable port reuse to allow multiple processes to share this port
+  reusePort: true,
   async fetch(req, server) {
     // Upgrade the request to a WebSocket connection
     if (server.upgrade(req)) {
@@ -145,6 +149,13 @@ const server = Bun.serve({
       return new Response(Bun.file("public/index.html"));
     }
     
+    if (url.pathname === "/instance") {
+      // Simple endpoint to check which server instance responded
+      return new Response(`Server instance ${SERVER_INDEX} on machine ${MACHINE_ID} responded`, {
+        headers: { "Content-Type": "text/plain" }
+      });
+    }
+    
     if (url.pathname === "/status") {
       // Get system info and return machine status for debugging
       const systemInfo = await getSystemInfo();
@@ -153,7 +164,8 @@ const server = Bun.serve({
         machine: {
           id: MACHINE_ID,
           name: MACHINE_NAME,
-          region: REGION
+          region: REGION,
+          serverIndex: SERVER_INDEX
         },
         stats: {
           bunProcesses: bunProcessCount,
