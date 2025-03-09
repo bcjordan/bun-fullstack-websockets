@@ -3,17 +3,135 @@ const MACHINE_ID = process.env.FLY_MACHINE_ID || "local";
 const MACHINE_NAME = process.env.FLY_MACHINE_NAME || "local";
 const REGION = process.env.FLY_REGION || "local";
 
+// Get number of Bun processes running on the machine
+import { exec } from "child_process";
+import { promisify } from "util";
+
+const execPromise = promisify(exec);
+let bunProcessCount = 0;
+
+// Function to count Bun processes
+async function updateBunProcessCount() {
+  try {
+    // Different command based on platform
+    const cmd = process.platform === "win32" 
+      ? "tasklist | findstr /i bun | find /c /v \"\"" 
+      : "ps -e | grep -c '[b]un'";
+    
+    const { stdout } = await execPromise(cmd);
+    bunProcessCount = parseInt(stdout.trim()) || 1;
+  } catch (error) {
+    console.error("Error counting Bun processes:", error);
+    bunProcessCount = 1; // Default to 1 on error
+  }
+}
+
+// Update process count on startup and periodically
+updateBunProcessCount();
+setInterval(updateBunProcessCount, 60000); // Update every minute
+
+// Function to broadcast server stats to all connected clients
+async function broadcastServerStats() {
+  const systemInfo = await getSystemInfo();
+  
+  const statsMessage = JSON.stringify({
+    type: "stats_update",
+    debug: {
+      bunProcesses: bunProcessCount,
+      connectedClients,
+      totalConnectionsReceived,
+      peakConcurrentConnections,
+      uptime: Math.floor(process.uptime()),
+      memoryUsageMB: Math.round(process.memoryUsage().heapUsed / 1024 / 1024)
+    },
+    system: systemInfo
+  });
+  
+  for (const client of clients) {
+    client.send(statsMessage);
+  }
+}
+
+// Periodically broadcast stats to all clients
+setInterval(broadcastServerStats, 10000); // Broadcast every 10 seconds
+
 // Log startup information
 console.log(`Server starting on machine: ${MACHINE_ID} (${MACHINE_NAME}) in region: ${REGION}`);
 
 // Keep track of all connected WebSocket clients
 const clients = new Set<WebSocket>();
 let connectedClients = 0;
+let totalConnectionsReceived = 0;
+let peakConcurrentConnections = 0;
+
+// Function to get system information
+async function getSystemInfo() {
+  try {
+    let cpuInfo = "";
+    let memInfo = "";
+    
+    if (process.platform === "linux") {
+      // Linux-specific commands
+      const cpuCmd = "cat /proc/loadavg";
+      const memCmd = "free -m | grep Mem";
+      
+      try {
+        const { stdout: cpuStdout } = await execPromise(cpuCmd);
+        cpuInfo = cpuStdout.trim();
+      } catch (e) {
+        cpuInfo = "Error getting CPU info";
+      }
+      
+      try {
+        const { stdout: memStdout } = await execPromise(memCmd);
+        memInfo = memStdout.trim();
+      } catch (e) {
+        memInfo = "Error getting memory info";
+      }
+    } else if (process.platform === "darwin") {
+      // macOS-specific commands
+      const cpuCmd = "sysctl -n vm.loadavg | tr -d '{}'";
+      const memCmd = "vm_stat | grep 'Pages free:'";
+      
+      try {
+        const { stdout: cpuStdout } = await execPromise(cpuCmd);
+        cpuInfo = cpuStdout.trim();
+      } catch (e) {
+        cpuInfo = "Error getting CPU info";
+      }
+      
+      try {
+        const { stdout: memStdout } = await execPromise(memCmd);
+        memInfo = memStdout.trim();
+      } catch (e) {
+        memInfo = "Error getting memory info";
+      }
+    } else if (process.platform === "win32") {
+      // Windows-specific logic
+      cpuInfo = "Windows CPU info not implemented";
+      memInfo = "Windows memory info not implemented";
+    }
+    
+    return {
+      loadAvg: cpuInfo,
+      memory: memInfo,
+      platform: process.platform,
+      arch: process.arch,
+      nodeVersion: process.version
+    };
+  } catch (error) {
+    console.error("Error getting system info:", error);
+    return {
+      error: "Failed to get system information",
+      platform: process.platform
+    };
+  }
+}
 
 // Create a websocket server
 const server = Bun.serve({
   port: parseInt(process.env.PORT || "3002"),
-  fetch(req, server) {
+  async fetch(req, server) {
     // Upgrade the request to a WebSocket connection
     if (server.upgrade(req)) {
       return;
@@ -28,7 +146,9 @@ const server = Bun.serve({
     }
     
     if (url.pathname === "/status") {
-      // Return machine status for debugging
+      // Get system info and return machine status for debugging
+      const systemInfo = await getSystemInfo();
+      
       return new Response(JSON.stringify({
         machine: {
           id: MACHINE_ID,
@@ -36,9 +156,15 @@ const server = Bun.serve({
           region: REGION
         },
         stats: {
+          bunProcesses: bunProcessCount,
           connectedClients,
-          uptime: process.uptime()
-        }
+          totalConnectionsReceived,
+          peakConcurrentConnections,
+          uptime: process.uptime(),
+          memoryUsage: process.memoryUsage(),
+          cpuUsage: process.cpuUsage()
+        },
+        system: systemInfo
       }), {
         headers: { "Content-Type": "application/json" }
       });
@@ -49,10 +175,22 @@ const server = Bun.serve({
   },
   websocket: {
     // Called when a WebSocket connects
-    open(ws) {
+    async open(ws) {
       connectedClients++;
+      totalConnectionsReceived++;
+      
+      // Update peak concurrent connections if needed
+      if (connectedClients > peakConcurrentConnections) {
+        peakConcurrentConnections = connectedClients;
+      }
+      
       console.log(`WebSocket connected (${connectedClients} total clients)`);
       clients.add(ws);
+      
+      // Get system info for welcome message
+      const systemInfo = await getSystemInfo();
+      
+      // Send welcome message with server debug info
       ws.send(JSON.stringify({ 
         type: "welcome", 
         message: `Hello from server ${MACHINE_NAME} in ${REGION}!`,
@@ -60,7 +198,16 @@ const server = Bun.serve({
           id: MACHINE_ID,
           name: MACHINE_NAME,
           region: REGION
-        }
+        },
+        debug: {
+          bunProcesses: bunProcessCount,
+          connectedClients,
+          totalConnectionsReceived,
+          peakConcurrentConnections,
+          uptime: Math.floor(process.uptime()),
+          memoryUsageMB: Math.round(process.memoryUsage().heapUsed / 1024 / 1024)
+        },
+        system: systemInfo
       }));
     },
     // Called when a WebSocket disconnects

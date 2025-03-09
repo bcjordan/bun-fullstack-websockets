@@ -53,12 +53,39 @@
   
   <div id="connection-status" class="disconnected">Disconnected</div>
   
+  <div id="server-info" style="margin-bottom: 10px; padding: 10px; border: 1px solid #ddd; display: none;">
+    <h3>Server Debug Info</h3>
+    <table>
+      <tr><td colspan="2"><strong>Server Info</strong></td></tr>
+      <tr><td>Machine:</td><td id="machine-id">-</td></tr>
+      <tr><td>Region:</td><td id="machine-region">-</td></tr>
+      <tr><td>Bun Processes:</td><td id="bun-processes">-</td></tr>
+      <tr><td>Connected Clients:</td><td id="connected-clients">-</td></tr>
+      <tr><td>Total Connections:</td><td id="total-connections">-</td></tr>
+      <tr><td>Peak Connections:</td><td id="peak-connections">-</td></tr>
+      <tr><td>Server Uptime:</td><td id="server-uptime">-</td></tr>
+      <tr><td>Memory Usage (MB):</td><td id="memory-usage">-</td></tr>
+      
+      <tr><td colspan="2"><strong>System Info</strong></td></tr>
+      <tr><td>Platform:</td><td id="system-platform">-</td></tr>
+      <tr><td>Architecture:</td><td id="system-arch">-</td></tr>
+      <tr><td>Node Version:</td><td id="system-node-version">-</td></tr>
+      <tr><td>Load Average:</td><td id="system-load">-</td></tr>
+      <tr><td>Memory Info:</td><td id="system-memory">-</td></tr>
+    </table>
+    <button id="refresh-stats" style="margin-top: 10px;">Refresh Stats</button>
+  </div>
+  
   <div id="messages"></div>
   
   <form id="chat-form">
     <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off" required>
     <button type="submit">Send</button>
   </form>
+  
+  <div style="margin-top: 10px;">
+    <button id="toggle-debug">Show/Hide Debug Info</button>
+  </div>
 
   <script src="app.js"></script>
 </body>

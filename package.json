@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "dev": "bun run src/server.ts",
-    "build": "bun build src/client/index.ts --outdir public && cp public/index.js public/app.js"
+    "build": "bun build src/client/index.ts --outdir public --outfile app.js",
+    "start": "bun run src/server.ts"
   },
   "devDependencies": {
     "bun-types": "latest"

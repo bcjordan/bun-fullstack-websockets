@@ -16,4 +16,4 @@ RUN bun run build
 EXPOSE 3002
 
 # Run the server
-CMD ["bun", "run", "dev"]
+CMD ["bun", "run", "start"]

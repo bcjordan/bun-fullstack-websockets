@@ -34,7 +34,7 @@ primary_region = "bos"  # Boston - change to your preferred region
   memory_mb = 512
 
 [processes]
-  app = "bun run dev"
+  app = "bun run start"
   
 [experimental]
   allowed_public_ports = []

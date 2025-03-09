@@ -3,6 +3,22 @@ var messagesContainer = document.getElementById("messages");
 var chatForm = document.getElementById("chat-form");
 var messageInput = document.getElementById("message-input");
 var connectionStatus = document.getElementById("connection-status");
+var serverInfoPanel = document.getElementById("server-info");
+var toggleDebugButton = document.getElementById("toggle-debug");
+var refreshStatsButton = document.getElementById("refresh-stats");
+var machineIdElement = document.getElementById("machine-id");
+var machineRegionElement = document.getElementById("machine-region");
+var bunProcessesElement = document.getElementById("bun-processes");
+var connectedClientsElement = document.getElementById("connected-clients");
+var totalConnectionsElement = document.getElementById("total-connections");
+var peakConnectionsElement = document.getElementById("peak-connections");
+var serverUptimeElement = document.getElementById("server-uptime");
+var memoryUsageElement = document.getElementById("memory-usage");
+var systemPlatformElement = document.getElementById("system-platform");
+var systemArchElement = document.getElementById("system-arch");
+var systemNodeVersionElement = document.getElementById("system-node-version");
+var systemLoadElement = document.getElementById("system-load");
+var systemMemoryElement = document.getElementById("system-memory");
 var socket;
 var reconnectTimeout;
 function connectWebSocket() {
@@ -24,8 +40,11 @@ function connectWebSocket() {
       console.log("Received message:", data);
       if (data.type === "welcome") {
         addMessage("System", data.message);
+        updateServerInfo(data);
       } else if (data.type === "chat") {
         addMessage("User", data.message, data.timestamp);
+      } else if (data.type === "stats_update") {
+        updateServerInfo(data);
       }
     } catch (error) {
       console.error("Error parsing message:", error);
@@ -75,4 +94,54 @@ chatForm.addEventListener("submit", (event) => {
     sendMessage(message);
   }
 });
+function formatUptime(seconds) {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor(seconds % 3600 / 60);
+  const secs = seconds % 60;
+  return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+}
+function updateServerInfo(data) {
+  if (data.machine) {
+    machineIdElement.textContent = `${data.machine.id} (${data.machine.name})`;
+    machineRegionElement.textContent = data.machine.region;
+  }
+  if (data.debug) {
+    bunProcessesElement.textContent = data.debug.bunProcesses.toString();
+    connectedClientsElement.textContent = data.debug.connectedClients.toString();
+    totalConnectionsElement.textContent = data.debug.totalConnectionsReceived.toString();
+    peakConnectionsElement.textContent = data.debug.peakConcurrentConnections.toString();
+    serverUptimeElement.textContent = formatUptime(data.debug.uptime);
+    memoryUsageElement.textContent = data.debug.memoryUsageMB.toString();
+  }
+  if (data.system) {
+    systemPlatformElement.textContent = data.system.platform || "-";
+    systemArchElement.textContent = data.system.arch || "-";
+    systemNodeVersionElement.textContent = data.system.nodeVersion || "-";
+    systemLoadElement.textContent = data.system.loadAvg || "-";
+    systemMemoryElement.textContent = data.system.memory || "-";
+  }
+}
+async function fetchServerStats() {
+  try {
+    const response = await fetch("/status");
+    if (response.ok) {
+      const data = await response.json();
+      updateServerInfo({
+        machine: data.machine,
+        debug: data.stats
+      });
+    }
+  } catch (error) {
+    console.error("Error fetching server stats:", error);
+  }
+}
+toggleDebugButton.addEventListener("click", () => {
+  if (serverInfoPanel.style.display === "none") {
+    serverInfoPanel.style.display = "block";
+    fetchServerStats();
+  } else {
+    serverInfoPanel.style.display = "none";
+  }
+});
+refreshStatsButton.addEventListener("click", fetchServerStats);
 connectWebSocket();
