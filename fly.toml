@@ -6,6 +6,7 @@ primary_region = "bos"
 
 [env]
   PORT = "3002"
+  USE_REUSE_PORT = "true"
 
 [http_service]
   internal_port = 3002
@@ -34,7 +35,7 @@ primary_region = "bos"
   memory_mb = 512
 
 [processes]
-  app = "bun run start"
+  app = "bun run start:cluster"
   
 [experimental]
   allowed_public_ports = []

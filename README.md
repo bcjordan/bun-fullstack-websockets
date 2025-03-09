@@ -48,6 +48,17 @@ PROCESS_COUNT=4 bun run start:cluster
 
 By default, the cluster will spawn a number of server instances equal to the number of available CPU cores. You can override this by setting the `PROCESS_COUNT` environment variable.
 
+### Auto-scaling on Fly.io
+
+When deployed to Fly.io, the application automatically determines the optimal number of server processes based on the available machine resources:
+
+- The application detects when it's running on a Fly.io machine
+- It examines the available memory using the `FLY_VM_MEMORY_MB` environment variable
+- It calculates the optimal number of processes (approximately 1 process per 256MB of memory)
+- The calculation ensures a minimum of 1 process and a maximum of 8 processes per machine
+
+This auto-scaling behavior helps ensure the application uses available resources efficiently without manual configuration.
+
 You can verify which server instance is responding by accessing the `/instance` endpoint.
 
 ## Getting Started

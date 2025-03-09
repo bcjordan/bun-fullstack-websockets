@@ -58,7 +58,15 @@ async function broadcastServerStats() {
 setInterval(broadcastServerStats, 10000); // Broadcast every 10 seconds
 
 // Log startup information
-console.log(`Server starting on machine: ${MACHINE_ID} (${MACHINE_NAME}) in region: ${REGION}`);
+const machineInfo = process.env.FLY_MACHINE_ID ? 
+  `Machine: ${MACHINE_ID} (${MACHINE_NAME}) in region: ${REGION}` : 
+  `local development`;
+
+const memoryInfo = process.env.FLY_VM_MEMORY_MB ? 
+  `, Memory: ${process.env.FLY_VM_MEMORY_MB}MB` : 
+  '';
+
+console.log(`Server starting on ${machineInfo}${memoryInfo}`);
 
 // Keep track of all connected WebSocket clients
 const clients = new Set<WebSocket>();
@@ -252,4 +260,4 @@ const server = Bun.serve({
   },
 });
 
-console.log(`Server running at http://localhost:${server.port}`);
+console.log(`Server instance ${SERVER_INDEX} running at http://localhost:${server.port}`);
