@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bun Full-Stack Example</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    #messages {
+      height: 300px;
+      border: 1px solid #ddd;
+      margin-bottom: 10px;
+      padding: 10px;
+      overflow-y: auto;
+    }
+    .message {
+      margin-bottom: 8px;
+      padding: 8px;
+      border-radius: 4px;
+      background-color: #f1f1f1;
+    }
+    .message-time {
+      font-size: 0.8em;
+      color: #666;
+    }
+    #chat-form {
+      display: flex;
+    }
+    #message-input {
+      flex-grow: 1;
+      padding: 8px;
+      margin-right: 8px;
+    }
+    #connection-status {
+      margin-bottom: 10px;
+      padding: 5px;
+    }
+    .connected {
+      background-color: #d4f7d4;
+    }
+    .disconnected {
+      background-color: #f7d4d4;
+    }
+  </style>
+</head>
+<body>
+  <h1>Bun WebSocket Chat</h1>
+  
+  <div id="connection-status" class="disconnected">Disconnected</div>
+  
+  <div id="messages"></div>
+  
+  <form id="chat-form">
+    <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off" required>
+    <button type="submit">Send</button>
+  </form>
+
+  <script src="app.js"></script>
+</body>
+</html>

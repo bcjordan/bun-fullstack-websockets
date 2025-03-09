@@ -1,0 +1,12 @@
+{
+  "name": "bun-full-stack",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run src/server.ts",
+    "build": "bun build src/client/index.ts --outdir public && cp public/index.js public/app.js"
+  },
+  "devDependencies": {
+    "bun-types": "latest"
+  }
+}
